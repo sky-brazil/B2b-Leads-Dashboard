@@ -1,0 +1,12 @@
+id,company_name,category,country,city,address,phone,website,rating
+1,Smile Care Dental,Dentist,USA,New York,123 Main St,+1-555-1234,https://smilecare.com,4.7
+2,NYC Marketing Hub,Marketing Agency,USA,New York,45 Broadway,+1-555-5678,https://nycmarketinghub.com,4.3
+3,Brooklyn Tech Solutions,IT Services,USA,Brooklyn,10 Tech Ave,+1-555-1111,https://brooklyntechsolutions.com,4.5
+4,Green Leaf Restaurant,Restaurant,USA,New York,78 Park Lane,+1-555-2222,https://greenleafny.com,4.1
+5,Queens Legal Group,Law Firm,USA,Queens,200 Liberty St,+1-555-3333,https://queenslegalgroup.com,4.6
+6,Manhattan Fitness Club,Fitness Center,USA,New York,90 5th Ave,+1-555-4444,https://manhattanfitnessclub.com,4.2
+7,NYC Dental Studio,Dentist,USA,New York,15 East 42nd St,+1-555-5555,https://nycdentalstudio.com,4.8
+8,Soho Creative Agency,Marketing Agency,USA,New York,5 Soho St,+1-555-6666,https://sohocreativeagency.com,4.4
+9,Bronx Auto Repair,Auto Repair,USA,Bronx,300 River Rd,+1-555-7777,,4.0
+10,Harlem Coffee House,Cafe,USA,New York,12 Uptown Ave,+1-555-8888,,4.3
+
