@@ -2,7 +2,8 @@ from flask import Flask, render_template, request, Response
 import pandas as pd
 import math
 
-app = Flask(__name__)
+# Keep templates at repository root for this project layout.
+app = Flask(__name__, template_folder=".")
 
 CSV_PATH = "leads.csv"
 ITEMS_PER_PAGE = 20
