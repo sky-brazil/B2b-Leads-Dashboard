@@ -1,2 +1,23 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-*
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
