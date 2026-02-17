@@ -1,30 +1,55 @@
-from flask import Flask, render_template, request, Response
-import pandas as pd
 import math
+from flask import Flask, Response, render_template, request
+import pandas as pd
 
 app = Flask(__name__)
 
 CSV_PATH = "leads.csv"
 ITEMS_PER_PAGE = 20
+EXPECTED_COLUMNS = [
+    "id",
+    "company_name",
+    "category",
+    "country",
+    "city",
+    "address",
+    "phone",
+    "website",
+    "rating",
+]
 
 
 def load_leads():
     df = pd.read_csv(CSV_PATH)
-    expected_cols = [
-        "id",
-        "company_name",
-        "category",
-        "country",
-        "city",
-        "address",
-        "phone",
-        "website",
-        "rating",
-    ]
-    missing = [c for c in expected_cols if c not in df.columns]
+    missing = [c for c in EXPECTED_COLUMNS if c not in df.columns]
     if missing:
-        raise ValueError(f"Colunas faltando no CSV: {missing}")
+        raise ValueError(f"Missing required CSV columns: {missing}")
     return df
+
+
+def contains_value(series, value):
+    return series.astype(str).str.contains(value, case=False, na=False, regex=False)
+
+
+def apply_filters(df, city="", country="", category="", search=""):
+    filtered = df.copy()
+
+    filter_map = {
+        "city": city,
+        "country": country,
+        "category": category,
+    }
+
+    for column, value in filter_map.items():
+        if value:
+            filtered = filtered[contains_value(filtered[column], value)]
+
+    if search:
+        mask_name = contains_value(filtered["company_name"], search)
+        mask_site = contains_value(filtered["website"], search)
+        filtered = filtered[mask_name | mask_site]
+
+    return filtered.sort_values("company_name")
 
 
 leads_df = load_leads()
@@ -44,23 +69,16 @@ def index():
         page = int(page)
         if page < 1:
             page = 1
-    except ValueError:
+    except (TypeError, ValueError):
         page = 1
 
-    filtered = leads_df.copy()
-
-    if city:
-        filtered = filtered[filtered["city"].str.contains(city, case=False, na=False)]
-    if country:
-        filtered = filtered[filtered["country"].str.contains(country, case=False, na=False)]
-    if category:
-        filtered = filtered[filtered["category"].str.contains(category, case=False, na=False)]
-    if search:
-        mask_name = filtered["company_name"].str.contains(search, case=False, na=False)
-        mask_site = filtered["website"].str.contains(search, case=False, na=False)
-        filtered = filtered[mask_name | mask_site]
-
-    filtered = filtered.sort_values("company_name")
+    filtered = apply_filters(
+        leads_df,
+        city=city,
+        country=country,
+        category=category,
+        search=search,
+    )
 
     total_items = len(filtered)
     total_pages = max(1, math.ceil(total_items / ITEMS_PER_PAGE))
@@ -71,6 +89,7 @@ def index():
     start = (page - 1) * ITEMS_PER_PAGE
     end = start + ITEMS_PER_PAGE
     page_items = filtered.iloc[start:end]
+    page_items = page_items.where(pd.notnull(page_items), None)
 
     leads = page_items.to_dict(orient="records")
 
@@ -96,24 +115,17 @@ def export():
     category = request.args.get("category", "").strip()
     search = request.args.get("search", "").strip()
 
-    filtered = leads_df.copy()
-
-    if city:
-        filtered = filtered[filtered["city"].str.contains(city, case=False, na=False)]
-    if country:
-        filtered = filtered[filtered["country"].str.contains(country, case=False, na=False)]
-    if category:
-        filtered = filtered[filtered["category"].str.contains(category, case=False, na=False)]
-    if search:
-        mask_name = filtered["company_name"].str.contains(search, case=False, na=False)
-        mask_site = filtered["website"].str.contains(search, case=False, na=False)
-        filtered = filtered[mask_name | mask_site]
-
-    filtered = filtered.sort_values("company_name")
+    filtered = apply_filters(
+        leads_df,
+        city=city,
+        country=country,
+        category=category,
+        search=search,
+    )
 
     csv_data = filtered.to_csv(index=False)
 
-    response = Response(csv_data, mimetype="text/csv")
+    response = Response(csv_data, mimetype="text/csv; charset=utf-8")
     response.headers["Content-Disposition"] = "attachment; filename=filtered_leads.csv"
     return response
 
