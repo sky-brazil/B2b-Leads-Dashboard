@@ -23,7 +23,7 @@ def load_leads():
     ]
     missing = [c for c in expected_cols if c not in df.columns]
     if missing:
-        raise ValueError(f"Colunas faltando no CSV: {missing}")
+        raise ValueError(f"Missing columns in CSV: {missing}")
     return df
 
 
