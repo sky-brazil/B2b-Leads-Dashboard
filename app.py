@@ -1,31 +1,57 @@
-from flask import Flask, render_template, request, Response
-import pandas as pd
 import math
 
-# Keep templates at repository root for this project layout.
-app = Flask(__name__, template_folder=".")
+import pandas as pd
+from flask import Flask, Response, render_template, request
+
+app = Flask(__name__)
 
 CSV_PATH = "leads.csv"
 ITEMS_PER_PAGE = 20
+EXPECTED_COLUMNS = [
+    "id",
+    "company_name",
+    "category",
+    "country",
+    "city",
+    "address",
+    "phone",
+    "website",
+    "rating",
+]
 
 
-def load_leads():
+def load_leads() -> pd.DataFrame:
     df = pd.read_csv(CSV_PATH)
-    expected_cols = [
-        "id",
-        "company_name",
-        "category",
-        "country",
-        "city",
-        "address",
-        "phone",
-        "website",
-        "rating",
-    ]
-    missing = [c for c in expected_cols if c not in df.columns]
+    missing = [column for column in EXPECTED_COLUMNS if column not in df.columns]
     if missing:
         raise ValueError(f"Missing columns in CSV: {missing}")
     return df
+
+
+def get_filters() -> dict[str, str]:
+    return {
+        "city": request.args.get("city", "").strip(),
+        "country": request.args.get("country", "").strip(),
+        "category": request.args.get("category", "").strip(),
+        "search": request.args.get("search", "").strip(),
+    }
+
+
+def apply_filters(df: pd.DataFrame, filters: dict[str, str]) -> pd.DataFrame:
+    filtered = df.copy()
+
+    for column in ("city", "country", "category"):
+        query = filters[column]
+        if query:
+            filtered = filtered[filtered[column].str.contains(query, case=False, na=False)]
+
+    search_query = filters["search"]
+    if search_query:
+        company_name_match = filtered["company_name"].str.contains(search_query, case=False, na=False)
+        website_match = filtered["website"].str.contains(search_query, case=False, na=False)
+        filtered = filtered[company_name_match | website_match]
+
+    return filtered.sort_values("company_name")
 
 
 leads_df = load_leads()
@@ -33,36 +59,12 @@ leads_df = load_leads()
 
 @app.route("/")
 def index():
-    global leads_df
-
-    city = request.args.get("city", "").strip()
-    country = request.args.get("country", "").strip()
-    category = request.args.get("category", "").strip()
-    search = request.args.get("search", "").strip()
-    page = request.args.get("page", 1)
-
-    try:
-        page = int(page)
-        if page < 1:
-            page = 1
-    except ValueError:
+    filters = get_filters()
+    page = request.args.get("page", default=1, type=int) or 1
+    if page < 1:
         page = 1
 
-    filtered = leads_df.copy()
-
-    if city:
-        filtered = filtered[filtered["city"].str.contains(city, case=False, na=False)]
-    if country:
-        filtered = filtered[filtered["country"].str.contains(country, case=False, na=False)]
-    if category:
-        filtered = filtered[filtered["category"].str.contains(category, case=False, na=False)]
-    if search:
-        mask_name = filtered["company_name"].str.contains(search, case=False, na=False)
-        mask_site = filtered["website"].str.contains(search, case=False, na=False)
-        filtered = filtered[mask_name | mask_site]
-
-    filtered = filtered.sort_values("company_name")
-
+    filtered = apply_filters(leads_df, filters)
     total_items = len(filtered)
     total_pages = max(1, math.ceil(total_items / ITEMS_PER_PAGE))
 
@@ -73,47 +75,20 @@ def index():
     end = start + ITEMS_PER_PAGE
     page_items = filtered.iloc[start:end]
 
-    leads = page_items.to_dict(orient="records")
-
     return render_template(
         "index.html",
-        leads=leads,
+        leads=page_items.to_dict(orient="records"),
         page=page,
         total_pages=total_pages,
         total_items=total_items,
-        city=city,
-        country=country,
-        category=category,
-        search=search,
+        **filters,
     )
 
 
 @app.route("/export")
 def export():
-    global leads_df
-
-    city = request.args.get("city", "").strip()
-    country = request.args.get("country", "").strip()
-    category = request.args.get("category", "").strip()
-    search = request.args.get("search", "").strip()
-
-    filtered = leads_df.copy()
-
-    if city:
-        filtered = filtered[filtered["city"].str.contains(city, case=False, na=False)]
-    if country:
-        filtered = filtered[filtered["country"].str.contains(country, case=False, na=False)]
-    if category:
-        filtered = filtered[filtered["category"].str.contains(category, case=False, na=False)]
-    if search:
-        mask_name = filtered["company_name"].str.contains(search, case=False, na=False)
-        mask_site = filtered["website"].str.contains(search, case=False, na=False)
-        filtered = filtered[mask_name | mask_site]
-
-    filtered = filtered.sort_values("company_name")
-
+    filtered = apply_filters(leads_df, get_filters())
     csv_data = filtered.to_csv(index=False)
-
     response = Response(csv_data, mimetype="text/csv")
     response.headers["Content-Disposition"] = "attachment; filename=filtered_leads.csv"
     return response
