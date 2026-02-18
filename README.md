@@ -1,3 +1,5 @@
+﻿> Public demo page: https://sky-brazil.github.io/B2b-Leads-Dashboard/
+
 # B2B Lead Intelligence Dashboard (Flask)
 
 Portfolio-grade internal tool for sales operations teams, SDR agencies, and growth partners that need fast lead qualification workflows.
@@ -33,12 +35,12 @@ The goal is simple: reduce manual sorting time and accelerate outreach execution
 
 ```text
 /workspace
-├── app.py
-├── leads.csv
-├── requirements.txt
-├── test_app.py
-└── templates/
-    └── index.html
+â”œâ”€â”€ app.py
+â”œâ”€â”€ leads.csv
+â”œâ”€â”€ requirements.txt
+â”œâ”€â”€ test_app.py
+â””â”€â”€ templates/
+    â””â”€â”€ index.html
 ```
 
 ## Local Setup
@@ -101,3 +103,4 @@ It demonstrates:
 ---
 
 If you are evaluating this repository from an outsourcing or Upwork perspective, this codebase is designed to show clear communication, pragmatic implementation, and business-oriented product thinking.
+
